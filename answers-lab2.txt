@@ -1,0 +1,41 @@
+﻿Q1
+x应该是uintptr_t类型的，因为value是指向char类型的指针，x被赋值为value，
+则x为一个虚拟地址的指针
+
+Q2
+1023 0xFFC00000
+1022 0xFF800000 下一个4MB的物理内存的页表
+959  0xEFC00000 bootstack
+957  0xEF400000 kern_pgdir
+956  0xEF000000 pages
+2    0x00800000 program data & heap
+1    0x00400000 UTEMP
+
+Q3
+用户程序不能随意修改内核代码数据，否则可能会破坏内核，造成程序崩溃
+设置PTE_U
+
+Q4
+一个大小为4MB的空间UPAGES来存放所有的Page结构体信息，
+每个大小为8Byte，共可以存放512K个Page，
+所以一共可以出现512K个物理页，物理内存2GB
+
+Q5
+Page结构体共4MB，512个页需要2MB的PTE，2KB的PDE，共需要额外开销6MB+4KB
+
+Q6
+在entry.S文件中有一个指令 jmp *%eax，
+这个指令设置eip的值为eax中的值，
+而这个值是大于KERNBASE的
+在entry_pgdir.c中，手写了一个4MB的页表映射，
+把虚拟地址空间[0, 4MB)，[KERNBASE,KERNBASE+4MB)
+都映射到物理地址空间[0, 4MB)上，
+所以当访问位于[0, 4MB)之间的虚拟地址时，可以把它们转换为物理地址。
+
+Challenge 2
+显示映射的实现：
+在monitor.c中添加mon_showmappings()函数。
+它接受两个参数作为起止地址，用strol转换为数，然后开始一个while循环
+先定义extern的kern_pgdir找到PD的起始地址
+以一个PTSIZE为步长，判断当前PDE是否开启大页（PTE_PS），是则打印当前PDE内容
+否则读取PDE找到对应PT，然后for循环遍历所有PTE，打印PTE内容，步长是一个PGSIZE
